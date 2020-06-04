@@ -3,6 +3,7 @@ import logo from '../../assets/logo.svg';
 import { Link } from 'react-router-dom';
 import { FiArrowLeft } from 'react-icons/fi';
 import { Map, TileLayer, Marker } from 'react-leaflet';
+import { LeafletMouseEvent } from 'leaflet';
 import axios from 'axios';
 import api from '../../services/api';
 
@@ -26,8 +27,11 @@ const CreatePoint = () => {
 
   const [items, setItems] = useState<Item[]>([]);
   const [ufs, setUf] = useState<string[]>([]);
-  const [selectedUF, setSelectedUF] = useState<string>('0');
   const [cities, setCities] = useState<string[]>([])
+
+  const [selectedUF, setSelectedUF] = useState<string>('0');
+  const [selectedCity, setSelectedCity] = useState<string>('');
+  const [selectedPosition, setSelectedPosition] = useState<[number, number]>([0,0]);
 
   useEffect(() => {
     api.get('items').then(response => {
@@ -58,10 +62,23 @@ const CreatePoint = () => {
   }, [selectedUF])
 
   // Carregar todas as cidades quando a UF mudar
-  function handleSelectedUF(event: ChangeEvent<HTMLSelectElement>) {
+  function handleSelectUF(event: ChangeEvent<HTMLSelectElement>) {
     const uf = event.target.value;
 
     setSelectedUF(uf);
+  }
+
+  function handleSelectCity(event: ChangeEvent<HTMLSelectElement>) {
+    const city = event.target.value;
+
+    setSelectedCity(city);
+  }
+
+  function handleMapClick(event: LeafletMouseEvent) {
+    setSelectedPosition([
+      event.latlng.lat, 
+      event.latlng.lng,
+    ]);
   }
 
   return(
@@ -116,13 +133,13 @@ const CreatePoint = () => {
             <span>Selecione o Endereço no mapa</span>
           </legend>
 
-          <Map center={[-23.6641927, -46.7768741]} zoom={15}>
+          <Map center={[-23.6641927, -46.7768741]} zoom={15} onClick={handleMapClick}>
             <TileLayer
               attribution='&amp;copy <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
 
-            <Marker position={[-23.6641927, -46.7768741]}/>
+            <Marker position={selectedPosition}/>
           </Map>
 
           <div className="field-group">
@@ -132,9 +149,10 @@ const CreatePoint = () => {
               <select 
                 name="uf" 
                 id="uf" 
-                onChange={handleSelectedUF}
+                onChange={handleSelectUF}
+                value={selectedUF}
               >
-                <option value={selectedUF}>Selecione uma UF</option>
+                <option value='0'>Selecione uma UF</option>
                 {
                   ufs.map(uf => {
                     return (
@@ -148,8 +166,13 @@ const CreatePoint = () => {
 
             <div className="field">
               <label htmlFor="city">Cidade</label>
-              <select name="city" id="city">
-                <option value="0">Selecione uma Cidade</option>
+              <select 
+                name="city" 
+                id="city"
+                value={selectedCity}
+                onChange={handleSelectCity}
+              >
+                <option value='0'>Selecione uma Cidade</option>
                 {
                   cities.map(city => {
                     return (
